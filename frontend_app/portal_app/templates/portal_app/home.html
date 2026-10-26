@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Portal</title>
+    <style>
+      body { margin:0; font-family:Arial,sans-serif; background:#f8fafc; color:#0f172a; }
+      .topbar { background:#0f172a; color:white; padding:18px 30px; display:flex; justify-content:space-between; align-items:center; }
+      .content { padding:30px; }
+      .menu { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
+      .menu a { text-decoration:none; background:#dbeafe; color:#1d4ed8; padding:10px 14px; border-radius:10px; font-weight:700; }
+      .card { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; box-shadow: 0 10px 15px rgba(15,23,42,.06); }
+      .hidden { display:none; }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <h2>Portal</h2>
+      <div>
+        <span>Usuario: {{ usuario }}</span>
+        <a href="{% url 'logout' %}" style="color:white; margin-left:12px;">Cerrar sesión</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="menu">
+        {% for label, enabled in menu.items %}
+          {% if enabled %}
+            <a href="#">{{ label }}</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>Permisos del usuario</h3>
+        {% if permisos %}
+          <ul>
+            {% for permiso in permisos %}
+              <li>{{ permiso }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No tiene permisos activos.</p>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
