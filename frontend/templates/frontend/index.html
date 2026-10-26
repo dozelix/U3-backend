@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayFlow Dashboard</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f5f7fb;
+        color: #1f2937;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 24px;
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .brand {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .badge {
+        background: #e0f2fe;
+        color: #075985;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 24px;
+      }
+      .card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        padding: 24px;
+      }
+      form {
+        display: grid;
+        gap: 16px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      label {
+        display: grid;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      input, select, button {
+        border-radius: 12px;
+        border: 1px solid #dbe2ea;
+        padding: 12px 14px;
+        font-size: 15px;
+      }
+      input:focus, select:focus {
+        outline: 2px solid #93c5fd;
+        border-color: #93c5fd;
+      }
+      button {
+        background: linear-gradient(135deg, #2563eb, #0ea5e9);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      button:hover {
+        opacity: 0.96;
+      }
+      .summary {
+        display: grid;
+        gap: 16px;
+      }
+      .metric {
+        background: linear-gradient(135deg, #eff6ff, #f8fafc);
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .metric h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: #475569;
+      }
+      .metric strong {
+        font-size: 30px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+      th, td {
+        text-align: left;
+        padding: 12px 8px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      th {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #64748b;
+      }
+      .status-pill {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .paid {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .failed {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      #status {
+        min-height: 24px;
+        margin-top: 12px;
+        font-weight: 600;
+      }
+      @media (max-width: 800px) {
+        .grid, .row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="topbar">
+        <div class="brand">PayFlow</div>
+        <div class="badge">Plataforma de pagos</div>
+      </div>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Nuevo pago</h2>
+          <form id="payment-form">
+            <div class="row">
+              <label>
+                Referencia
+                <input name="reference" type="text" value="INV-1001" required />
+              </label>
+              <label>
+                Monto
+                <input name="amount" type="number" step="0.01" value="149.99" required />
+              </label>
+            </div>
+            <div class="row">
+              <label>
+                Moneda
+                <select name="currency">
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="MXN">MXN</option>
+                </select>
+              </label>
+              <label>
+                Método
+                <select name="method">
+                  <option value="credit_card">Tarjeta</option>
+                  <option value="bank_transfer">Transferencia</option>
+                  <option value="wallet">Wallet</option>
+                </select>
+              </label>
+            </div>
+            <button type="submit">Procesar pago</button>
+          </form>
+          <div id="status"></div>
+        </section>
+
+        <aside class="summary">
+          <div class="metric card">
+            <h3>Pagos hoy</h3>
+            <strong id="count">0</strong>
+          </div>
+          <div class="metric card">
+            <h3>Volumen</h3>
+            <strong id="volume">$0.00</strong>
+          </div>
+        </aside>
+      </div>
+
+      <section class="card" style="margin-top:24px;">
+        <h2>Últimos pagos</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Referencia</th>
+              <th>Monto</th>
+              <th>Moneda</th>
+              <th>Método</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="payments-table"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <script>
+      const API_BASE = 'http://localhost:8080/api';
+
+      async function fetchPayments() {
+        const response = await fetch(`${API_BASE}/payments/`);
+        const payments = await response.json();
+        const tbody = document.getElementById('payments-table');
+        tbody.innerHTML = '';
+
+        payments.forEach((payment) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${payment.reference}</td>
+            <td>${Number(payment.amount).toFixed(2)}</td>
+            <td>${payment.currency}</td>
+            <td>${payment.method}</td>
+            <td><span class="status-pill ${payment.status}">${payment.status}</span></td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        const count = payments.length;
+        const volume = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+        document.getElementById('count').textContent = String(count);
+        document.getElementById('volume').textContent = `$${volume.toFixed(2)}`;
+      }
+
+      document.getElementById('payment-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        const payload = {
+          reference: form.get('reference'),
+          amount: Number(form.get('amount')),
+          currency: form.get('currency'),
+          method: form.get('method'),
+        };
+
+        const statusNode = document.getElementById('status');
+        statusNode.textContent = 'Procesando pago...';
+
+        const response = await fetch(`${API_BASE}/payments/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          statusNode.textContent = `Pago registrado: ${result.reference}`;
+          event.target.reset();
+          document.querySelector('input[name="reference"]').value = `INV-${Math.floor(Math.random() * 900 + 100)}`;
+          document.querySelector('input[name="amount"]').value = '149.99';
+        } else {
+          statusNode.textContent = 'Error al registrar el pago.';
+          console.error(result);
+        }
+
+        await fetchPayments();
+      });
+
+      fetchPayments();
+    </script>
+  </body>
+</html>
