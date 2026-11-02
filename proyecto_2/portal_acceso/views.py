@@ -32,14 +32,23 @@ def _api_post(endpoint, payload):
     )
     try:
         with request.urlopen(req, timeout=10) as response:
-            return json.loads(response.read().decode('utf-8')), response.status
+            try:
+                data = json.loads(response.read().decode('utf-8'))
+            except json.JSONDecodeError:
+                return {'ok': False, 'detail': 'La API devolvió una respuesta inválida.'}, 502
+            if not isinstance(data, dict):
+                return {'ok': False, 'detail': 'La API devolvió una respuesta inválida.'}, 502
+            return data, response.status
     except error.HTTPError as exc:
         body = exc.read().decode('utf-8', 'ignore')
         try:
-            return json.loads(body), exc.code
-        except Exception:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            data = None
+        if not isinstance(data, dict):
             return {'ok': False, 'detail': body or 'Error de API'}, exc.code
-    except Exception:
+        return data, exc.code
+    except (error.URLError, OSError):
         return {'ok': False, 'detail': 'No se pudo conectar con la API.'}, 503
 
 

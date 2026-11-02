@@ -1,9 +1,32 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from urllib.error import URLError
 
 from django.test import SimpleTestCase
 
+from portal_acceso.views import _api_post
+
 
 class PortalAccesoTests(SimpleTestCase):
+	@patch('portal_acceso.views.request.urlopen', side_effect=URLError('offline'))
+	def test_error_de_conexion_con_api_se_muestra_al_usuario(self, solicitud_api):
+		respuesta, codigo = _api_post('/autentificar/', {})
+
+		self.assertEqual(codigo, 503)
+		self.assertEqual(respuesta['detail'], 'No se pudo conectar con la API.')
+
+	@patch('portal_acceso.views.request.urlopen')
+	def test_respuesta_invalida_de_api_se_identifica_como_error_de_gateway(self, solicitud_api):
+		respuesta_api = MagicMock()
+		respuesta_api.__enter__.return_value = respuesta_api
+		respuesta_api.read.return_value = b'not-json'
+		respuesta_api.status = 200
+		solicitud_api.return_value = respuesta_api
+
+		respuesta, codigo = _api_post('/autentificar/', {})
+
+		self.assertEqual(codigo, 502)
+		self.assertIn('respuesta inválida', respuesta['detail'])
+
 	@patch('portal_acceso.views._api_post')
 	def test_login_valido_guarda_sesion_y_redirige_al_inicio(self, solicitud_api):
 		solicitud_api.return_value = ({
