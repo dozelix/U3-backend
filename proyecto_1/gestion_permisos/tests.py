@@ -47,6 +47,41 @@ class PermisosApiTests(APITestCase):
 		self.assertContains(respuesta, 'agregarusuario')
 		self.assertEqual(login.status_code, 200)
 
+	def test_interfaz_navegable_muestra_campos_de_autenticacion(self):
+		respuesta = self.client.get(
+			'/api/autentificar/',
+			HTTP_HOST='localhost',
+			HTTP_ACCEPT='text/html',
+		)
+
+		self.assertEqual(respuesta.status_code, 405)
+		self.assertContains(respuesta, 'name="username"', status_code=405)
+		self.assertContains(respuesta, 'name="password"', status_code=405)
+		self.assertContains(respuesta, 'type="password"', status_code=405)
+
+	def test_interfaz_navegable_muestra_campos_de_gestion(self):
+		self.assertTrue(self.client.login(
+			username=self.operador.username,
+			password='ClaveSegura123!',
+		))
+		endpoints = (
+			('/api/agregarusuario/', ('username', 'password', 'email')),
+			('/api/actualizar/', ('username', 'new_password')),
+			('/api/addpermiso/', ('nombre', 'codename')),
+			('/api/asociapermiso/', ('username', 'permiso', 'nombre', 'codename')),
+		)
+
+		for endpoint, campos in endpoints:
+			with self.subTest(endpoint=endpoint):
+				respuesta = self.client.get(
+					endpoint,
+					HTTP_HOST='localhost',
+					HTTP_ACCEPT='text/html',
+				)
+				self.assertEqual(respuesta.status_code, 405)
+				for campo in campos:
+					self.assertContains(respuesta, f'name="{campo}"', status_code=405)
+
 	def test_operador_temporal_puede_operar_desde_la_interfaz_navegable(self):
 		self.assertTrue(self.client.login(
 			username=self.operador.username,
@@ -57,6 +92,7 @@ class PermisosApiTests(APITestCase):
 			{'nombre': 'permiso_desde_ui'},
 			HTTP_HOST='localhost',
 			HTTP_ACCEPT='text/html',
+			format='multipart',
 		)
 
 		self.assertEqual(respuesta.status_code, 201)

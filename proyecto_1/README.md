@@ -22,6 +22,16 @@ La API guarda usuarios y permisos en `db.sqlite3`. Su interfaz navegable está e
 
 `autentificar` permite iniciar sesión y devuelve el usuario, sus permisos, servicios y un token. También se puede solicitar un token en `/api/token/`. Las operaciones de alta, cambio de contraseña y permisos requieren `is_staff=True` y el encabezado `Authorization: Bearer <token>`. La cuenta `user` se configura como usuario normal; estas operaciones permanecen protegidas y pueden responder 403 para esa cuenta.
 
+En la interfaz navegable, cada endpoint muestra sus campos de entrada y permite enviar el formulario directamente. Campos disponibles:
+
+| Endpoint | Campos |
+| --- | --- |
+| `autentificar` | `username`, `password` |
+| `agregarusuario` | `username`, `password`, `email` (opcional) |
+| `actualizar` | `username`, `new_password` |
+| `addpermiso` | `nombre` o `codename` |
+| `asociapermiso` | `username` y `permiso`, `nombre` o `codename` |
+
 ## Pruebas
 
 ```sh
