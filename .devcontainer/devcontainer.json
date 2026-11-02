@@ -1,0 +1,34 @@
+{
+  "name": "Evaluacion 3 Backend Django",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.13-bookworm",
+  "workspaceFolder": "/workspaces/U3-backend",
+  "forwardPorts": [8000, 8050],
+  "portsAttributes": {
+    "8000": {
+      "label": "Proyecto 2 - Portal de acceso",
+      "onAutoForward": "notify"
+    },
+    "8050": {
+      "label": "Proyecto 1 - API de permisos",
+      "onAutoForward": "notify"
+    }
+  },
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "postCreateCommand": "python -m pip install -r requirements.txt && cd proyecto_1 && python manage.py migrate --noinput && python manage.py check && python manage.py test && cd ../proyecto_2 && python manage.py check && python manage.py test",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.unittestEnabled": false
+      }
+    }
+  },
+  "shutdownAction": "stopContainer"
+}

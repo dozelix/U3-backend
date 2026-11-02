@@ -1,44 +1,43 @@
-# Payment Platform Template
+# Evaluación Práctica 03
 
-Proyecto Django con una app de frontend y una app de API REST para una plataforma de pagos.
+La entrega contiene exactamente los dos proyectos solicitados:
 
-## Requisitos
+- [Proyecto 1: API de permisos](proyecto_1/README.md), Django REST Framework y SQLite en el puerto `8050`.
+- [Proyecto 2: Portal de acceso](proyecto_2/README.md), login y menú según permisos en el puerto `8000`, sin base de datos.
 
-- Python 3.13
-- Entorno virtual en `.venv`
+## Preparación
 
-## Activar entorno
+Desde la raíz del repositorio:
 
-```powershell
-cd "t:\U3 backend"
-.\.venv\Scripts\Activate.ps1
+```sh
+python -m pip install -r requirements.txt
 ```
 
-## Ejecutar frontend
+Inicia cada proyecto en una terminal separada. Primero prepara y ejecuta la API:
 
-```powershell
-python manage.py runserver 0.0.0.0:8000 --settings=payment_platform.frontend_settings
+```sh
+cd proyecto_1
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver 0.0.0.0:8050
 ```
 
-## Ejecutar API REST
+Luego ejecuta el portal:
 
-```powershell
-python manage.py runserver 0.0.0.0:8080 --settings=payment_platform.api_settings
+```sh
+cd proyecto_2
+python manage.py runserver 0.0.0.0:8000
 ```
 
-## Base de datos
+## Pruebas locales
 
-Se usa SQLite por defecto:
+Ejecuta cada suite desde su carpeta:
 
-```text
-T:\U3 backend\db.sqlite3
+```sh
+cd proyecto_1 && python manage.py test
+cd ../proyecto_2 && python manage.py test
 ```
 
-## Endpoints de la API
+## Dev Container
 
-- `http://localhost:8080/api/health/`
-- `http://localhost:8080/api/payments/`
-
-## Frontend
-
-- `http://localhost:8000/`
+En VS Code, ejecuta **Reopen in Container**. La creación del contenedor instala las dependencias, prepara las migraciones de la API y ejecuta los checks y tests de ambos proyectos. Los puertos `8000` y `8050` quedan reenviados automáticamente.
