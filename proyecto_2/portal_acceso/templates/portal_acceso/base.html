@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Portal de acceso{% endblock %}</title>
+    <style>
+      body { margin:0; font-family:Arial,sans-serif; background:#f8fafc; color:#0f172a; }
+      .topbar { background:#0f172a; color:white; padding:18px 30px; display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap; }
+      .topbar h2 { margin:0; }
+      .account { display:flex; align-items:center; gap:12px; }
+      .account a { color:white; }
+      .content { padding:30px; }
+      .menu { display:flex; gap:12px; flex-wrap:wrap; margin-top:18px; }
+      .menu a { text-decoration:none; background:#dbeafe; color:#1d4ed8; padding:10px 14px; border-radius:8px; font-weight:700; }
+      .menu a[aria-current="page"] { background:#1d4ed8; color:white; }
+      .card { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:20px; box-shadow:0 10px 15px rgba(15,23,42,.06); }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <h2>Portal de acceso</h2>
+      <div class="account">
+        <span>Usuario: {{ usuario }}</span>
+        <a href="{% url 'cerrar_sesion' %}">Cerrar sesión</a>
+      </div>
+      <nav class="menu" aria-label="Navegación principal">
+        {% for item in menu %}
+          {% if item.visible %}
+            <a href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.label }}</a>
+          {% endif %}
+        {% endfor %}
+      </nav>
+    </header>
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

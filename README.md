@@ -18,7 +18,7 @@ Inicia cada proyecto en una terminal separada. Primero prepara y ejecuta la API:
 ```sh
 cd proyecto_1
 python manage.py migrate
-python manage.py createsuperuser
+python manage.py shell -c "from django.contrib.auth.models import User; User.objects.create_user(username='staffuser', password='test1234', is_staff=True); User.objects.create_user(username='user', password='test1234')"
 python manage.py runserver 0.0.0.0:8050
 ```
 

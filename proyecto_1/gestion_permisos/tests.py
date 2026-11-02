@@ -1,4 +1,5 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.test import APITestCase
 
 
@@ -8,8 +9,8 @@ class PermisosApiTests(APITestCase):
 			username='estudiante',
 			password='ClaveSegura123!',
 		)
-		self.administrador = User.objects.create_user(
-			username='administrador',
+		self.staffuser = User.objects.create_user(
+			username='staffuser',
 			password='ClaveSegura123!',
 			is_staff=True,
 		)
@@ -43,6 +44,31 @@ class PermisosApiTests(APITestCase):
 
 		self.assertEqual(respuesta.status_code, 401)
 
+	def test_usuario_recibe_solo_los_servicios_de_sus_permisos(self):
+		permiso = Permission.objects.create(
+			name='Ver reportes',
+			codename='view_reports',
+			content_type=ContentType.objects.get_for_model(User),
+		)
+		self.usuario.user_permissions.add(permiso)
+		respuesta = self.client.post('/api/autentificar/', {
+			'username': self.usuario.username,
+			'password': 'ClaveSegura123!',
+		}, format='json')
+
+		self.assertEqual(respuesta.status_code, 200)
+		self.assertEqual(respuesta.data['permisos'], ['view_reports'])
+		self.assertEqual(respuesta.data['servicios'], {
+			'dashboard': False,
+			'usuarios': False,
+			'pagos': False,
+			'reportes': True,
+			'configuracion': False,
+		})
+
+	def test_no_publica_interfaz_admin(self):
+		self.assertEqual(self.client.get('/admin/').status_code, 404)
+
 	def test_endpoints_de_gestion_requieren_administrador(self):
 		endpoints = (
 			('/api/agregarusuario/', {'username': 'nuevo', 'password': 'ClaveSegura123!'}),
@@ -59,8 +85,8 @@ class PermisosApiTests(APITestCase):
 				self.assertEqual(self.client.post(endpoint, datos, format='json').status_code, 403)
 				self.client.credentials()
 
-	def test_administrador_crea_usuario_y_actualiza_clave(self):
-		self.autenticar_como(self.administrador)
+	def test_staffuser_crea_usuario_y_actualiza_clave(self):
+		self.autenticar_como(self.staffuser)
 
 		respuesta_alta = self.client.post('/api/agregarusuario/', {
 			'username': 'nuevo',
@@ -76,8 +102,8 @@ class PermisosApiTests(APITestCase):
 		self.usuario.refresh_from_db()
 		self.assertTrue(self.usuario.check_password('OtraClave123!'))
 
-	def test_administrador_crea_y_asocia_permiso(self):
-		self.autenticar_como(self.administrador)
+	def test_staffuser_crea_y_asocia_permiso(self):
+		self.autenticar_como(self.staffuser)
 		respuesta_permiso = self.client.post('/api/addpermiso/', {
 			'nombre': 'ver_informes',
 		}, format='json')

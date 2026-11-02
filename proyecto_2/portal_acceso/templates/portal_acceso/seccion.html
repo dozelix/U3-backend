@@ -1,0 +1,10 @@
+{% extends 'portal_acceso/base.html' %}
+
+{% block title %}{{ titulo }} | Portal de acceso{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <h1>{{ titulo }}</h1>
+    <p>Sección disponible para {{ usuario }}.</p>
+  </section>
+{% endblock %}

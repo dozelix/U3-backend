@@ -27,9 +27,10 @@ def autentificar(request):
             'detail': 'Credenciales inválidas.'
         }, status=status.HTTP_401_UNAUTHORIZED)
 
-    permisos_directos = set(user.user_permissions.values_list('codename', flat=True))
-    permisos_grupo = set(user.groups.values_list('permissions__codename', flat=True))
-    permisos = sorted(permisos_directos.union(permisos_grupo))
+    permisos = sorted({
+        permiso.rsplit('.', 1)[-1]
+        for permiso in user.get_all_permissions()
+    })
 
     servicios = {
         'dashboard': any(item in permisos for item in ('view_dashboard', 'manage_dashboard')),

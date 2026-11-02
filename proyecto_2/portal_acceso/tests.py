@@ -68,7 +68,66 @@ class PortalAccesoTests(SimpleTestCase):
 
 		respuesta = self.client.get('/')
 
-		self.assertContains(respuesta, 'href="#">Panel</a>')
-		self.assertContains(respuesta, 'href="#">Reportes</a>')
-		self.assertNotContains(respuesta, 'href="#">Usuarios</a>')
-		self.assertNotContains(respuesta, 'href="#">Pagos</a>')
+		self.assertContains(respuesta, 'href="/" aria-current="page">Panel</a>')
+		self.assertContains(respuesta, 'href="/reportes/">Reportes</a>')
+		self.assertNotContains(respuesta, 'href="/usuarios/">Usuarios</a>')
+		self.assertNotContains(respuesta, 'href="/pagos/">Pagos</a>')
+		self.assertNotContains(respuesta, 'Permisos del usuario')
+
+	@patch('portal_acceso.views._api_post')
+	def test_inicio_redirige_a_una_seccion_permitida_si_no_tiene_dashboard(self, solicitud_api):
+		solicitud_api.return_value = ({
+			'ok': True,
+			'user': {'username': 'estudiante'},
+			'permisos': ['view_reports'],
+			'servicios': {'dashboard': False, 'reportes': True},
+		}, 200)
+		self.client.post('/login/', {'username': 'estudiante', 'password': 'clave'})
+
+		respuesta = self.client.get('/')
+
+		self.assertRedirects(respuesta, '/reportes/', fetch_redirect_response=False)
+
+	@patch('portal_acceso.views._api_post')
+	def test_secciones_abren_con_permisos_y_rechazan_acceso_directo_sin_permiso(self, solicitud_api):
+		servicios = {
+			'dashboard': True,
+			'usuarios': True,
+			'pagos': True,
+			'reportes': True,
+			'configuracion': True,
+		}
+		solicitud_api.return_value = ({
+			'ok': True,
+			'user': {'username': 'estudiante'},
+			'permisos': [],
+			'servicios': servicios,
+		}, 200)
+		self.client.post('/login/', {'username': 'estudiante', 'password': 'clave'})
+
+		for ruta, titulo in (
+			('/usuarios/', 'Usuarios'),
+			('/pagos/', 'Pagos'),
+			('/reportes/', 'Reportes'),
+			('/configuracion/', 'Configuración'),
+		):
+			with self.subTest(ruta=ruta):
+				respuesta = self.client.get(ruta)
+				self.assertEqual(respuesta.status_code, 200)
+				self.assertContains(respuesta, f'<h1>{titulo}</h1>')
+
+		self.client.get('/logout/')
+		servicios['usuarios'] = False
+		solicitud_api.return_value = ({
+			'ok': True,
+			'user': {'username': 'estudiante'},
+			'permisos': [],
+			'servicios': servicios,
+		}, 200)
+		self.client.post('/login/', {'username': 'estudiante', 'password': 'clave'})
+		self.assertEqual(self.client.get('/usuarios/').status_code, 403)
+
+	def test_seccion_redirige_si_no_hay_sesion(self):
+		respuesta = self.client.get('/reportes/')
+
+		self.assertRedirects(respuesta, '/login/', fetch_redirect_response=False)

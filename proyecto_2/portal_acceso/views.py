@@ -2,9 +2,23 @@ import json
 from urllib import error, request
 
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.http import HttpResponseForbidden
+from django.shortcuts import redirect, render, reverse
 
 API_URL = 'http://localhost:8050/api'
+MENU_ITEMS = (
+    ('Panel', 'dashboard', 'inicio'),
+    ('Usuarios', 'usuarios', 'usuarios'),
+    ('Pagos', 'pagos', 'pagos'),
+    ('Reportes', 'reportes', 'reportes'),
+    ('Configuración', 'configuracion', 'configuracion'),
+)
+SECCIONES = {
+    'usuarios': 'Usuarios',
+    'pagos': 'Pagos',
+    'reportes': 'Reportes',
+    'configuracion': 'Configuración',
+}
 
 
 def _api_post(endpoint, payload):
@@ -29,26 +43,52 @@ def _api_post(endpoint, payload):
 
 
 def inicio(request):
-    if 'usuario' not in request.session:
+    usuario = request.session.get('usuario')
+    if not usuario:
         return redirect('iniciar_sesion')
 
-    usuario = request.session.get('usuario')
-    permisos = set(request.session.get('permisos', []))
     servicios = request.session.get('servicios', {})
-
-    menu = {
-        'Panel': servicios.get('dashboard', False),
-        'Usuarios': servicios.get('usuarios', False),
-        'Pagos': servicios.get('pagos', False),
-        'Reportes': servicios.get('reportes', False),
-        'Configuración': servicios.get('configuracion', False),
-    }
+    if not servicios.get('dashboard'):
+        for _, service, route_name in MENU_ITEMS[1:]:
+            if servicios.get(service):
+                return redirect(route_name)
+        return HttpResponseForbidden()
 
     return render(request, 'portal_acceso/home.html', {
         'usuario': usuario,
-        'menu': menu,
-        'permisos': sorted(permisos),
+        'menu': _crear_menu(servicios, 'inicio'),
     })
+
+
+def seccion(request, seccion):
+    usuario = request.session.get('usuario')
+    if not usuario:
+        return redirect('iniciar_sesion')
+
+    if seccion not in SECCIONES:
+        return HttpResponseForbidden()
+
+    servicios = request.session.get('servicios', {})
+    if not servicios.get(seccion):
+        return HttpResponseForbidden()
+
+    return render(request, 'portal_acceso/seccion.html', {
+        'usuario': usuario,
+        'menu': _crear_menu(servicios, seccion),
+        'titulo': SECCIONES[seccion],
+    })
+
+
+def _crear_menu(servicios, ruta_activa):
+    return [
+        {
+            'label': label,
+            'url': reverse(route_name),
+            'visible': servicios.get(service, False),
+            'active': route_name == ruta_activa,
+        }
+        for label, service, route_name in MENU_ITEMS
+    ]
 
 
 def iniciar_sesion(request):
