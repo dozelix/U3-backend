@@ -2,10 +2,11 @@ import json
 from urllib import error, request
 
 from django.contrib import messages
+from django.conf import settings
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render, reverse
 
-API_URL = 'http://localhost:8050/api'
+API_URL = settings.API_URL
 MENU_ITEMS = (
     ('Panel', 'dashboard', 'inicio'),
     ('Usuarios', 'usuarios', 'usuarios'),
@@ -48,15 +49,16 @@ def inicio(request):
         return redirect('iniciar_sesion')
 
     servicios = request.session.get('servicios', {})
+    menu = _crear_menu(servicios, 'inicio')
     if not servicios.get('dashboard'):
-        for _, service, route_name in MENU_ITEMS[1:]:
-            if servicios.get(service):
-                return redirect(route_name)
-        return HttpResponseForbidden()
+        for item in menu[1:]:
+            if item['visible']:
+                return redirect(item['url'])
 
     return render(request, 'portal_acceso/home.html', {
         'usuario': usuario,
-        'menu': _crear_menu(servicios, 'inicio'),
+        'menu': menu,
+        'sin_secciones': not any(item['visible'] for item in menu),
     })
 
 

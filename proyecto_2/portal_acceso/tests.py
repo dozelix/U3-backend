@@ -11,6 +11,7 @@ class PortalAccesoTests(SimpleTestCase):
 			'user': {'username': 'estudiante'},
 			'permisos': ['view_reports'],
 			'servicios': {'reportes': True},
+			'token': 'token-acceso',
 		}, 200)
 
 		respuesta = self.client.post('/login/', {
@@ -21,6 +22,7 @@ class PortalAccesoTests(SimpleTestCase):
 		self.assertRedirects(respuesta, '/', fetch_redirect_response=False)
 		self.assertEqual(self.client.session['usuario'], 'estudiante')
 		self.assertEqual(self.client.session['permisos'], ['view_reports'])
+		self.assertNotIn('token', self.client.session)
 		solicitud_api.assert_called_once_with('/autentificar/', {
 			'username': 'estudiante',
 			'password': 'ClaveSegura123!',
@@ -46,6 +48,38 @@ class PortalAccesoTests(SimpleTestCase):
 		respuesta = self.client.get('/')
 
 		self.assertRedirects(respuesta, '/login/', fetch_redirect_response=False)
+
+	@patch('portal_acceso.views._api_post')
+	def test_usuario_sin_permisos_ve_inicio_sin_secciones(self, solicitud_api):
+		solicitud_api.return_value = ({
+			'ok': True,
+			'user': {'username': 'user'},
+			'permisos': [],
+			'servicios': {},
+		}, 200)
+		self.client.post('/login/', {'username': 'user', 'password': 'test1234'})
+
+		respuesta = self.client.get('/')
+
+		self.assertEqual(respuesta.status_code, 200)
+		self.assertContains(respuesta, 'Sin opciones disponibles')
+		self.assertNotContains(respuesta, 'Permisos del usuario')
+
+	@patch('portal_acceso.views._api_post')
+	def test_usuario_normal_no_abre_seccion_sin_servicio(self, solicitud_api):
+		solicitud_api.return_value = ({
+			'ok': True,
+			'user': {'username': 'user'},
+			'permisos': [],
+			'servicios': {},
+		}, 200)
+		self.client.post('/login/', {'username': 'user', 'password': 'test1234'})
+
+		self.assertEqual(self.client.get('/usuarios/').status_code, 403)
+		solicitud_api.assert_called_once_with('/autentificar/', {
+			'username': 'user',
+			'password': 'test1234',
+		})
 
 	@patch('portal_acceso.views._api_post')
 	def test_menu_muestra_solo_los_servicios_autorizados(self, solicitud_api):

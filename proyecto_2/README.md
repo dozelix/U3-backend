@@ -2,14 +2,16 @@
 
 ## Ejecutar
 
-```sh
+```powershell
 cd proyecto_2
 python manage.py runserver 0.0.0.0:8000
 ```
 
 ## Integración
 
-El formulario de inicio de sesión consume `http://localhost:8050/api/autentificar/`. Inicia primero el Proyecto 1.
+Inicia primero el Proyecto 1 con `runserver` en el puerto `8050`. El login consume `http://localhost:8050/api/autentificar/`.
+
+El portal solo consulta `autentificar` y configura el menú con los servicios recibidos. La sección Usuarios no crea cuentas desde el Proyecto 2; el endpoint de alta está disponible en la UI de la API del Proyecto 1.
 
 ## Restricciones
 

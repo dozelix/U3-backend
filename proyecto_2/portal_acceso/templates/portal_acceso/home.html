@@ -4,7 +4,12 @@
 
 {% block content %}
   <section class="card">
-    <h1>Panel</h1>
-    <p>Bienvenido, {{ usuario }}.</p>
+    {% if sin_secciones %}
+      <h1>Sin opciones disponibles</h1>
+      <p>Tu acceso fue validado, pero no tienes secciones habilitadas.</p>
+    {% else %}
+      <h1>Panel</h1>
+      <p>Bienvenido, {{ usuario }}.</p>
+    {% endif %}
   </section>
 {% endblock %}

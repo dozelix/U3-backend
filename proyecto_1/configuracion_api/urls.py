@@ -15,10 +15,16 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import include, path
+from django.views.generic import RedirectView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from gestion_permisos.views import api_root
+
 urlpatterns = [
+    path('', RedirectView.as_view(url='/api/', permanent=False), name='home'),
+    path('api/', api_root, name='api_root'),
     path('api/', include('gestion_permisos.urls')),
+    path('api-auth/', include('rest_framework.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

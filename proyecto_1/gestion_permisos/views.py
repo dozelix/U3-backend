@@ -1,17 +1,49 @@
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.reverse import reverse as api_reverse
 from rest_framework_simplejwt.tokens import RefreshToken
+
+SERVICIO_PERMISOS = {
+    'dashboard': {'view_dashboard', 'manage_dashboard', 'dashboard', 'ver_panel', 'gestionar_panel'},
+    'usuarios': {'view_users', 'manage_users', 'view_usuarios', 'manage_usuarios', 'usuarios', 'ver_usuarios', 'gestionar_usuarios'},
+    'pagos': {'view_payments', 'manage_payments', 'view_pagos', 'manage_pagos', 'pagos', 'ver_pagos', 'gestionar_pagos'},
+    'reportes': {'view_reports', 'manage_reports', 'view_reportes', 'manage_reportes', 'reportes', 'ver_informes', 'gestionar_informes'},
+    'configuracion': {'view_settings', 'manage_settings', 'view_configuracion', 'manage_configuracion', 'configuracion', 'ver_configuracion', 'gestionar_configuracion'},
+}
 
 
 def _normalizar_permiso(nombre):
     if not nombre:
         return ''
     return str(nombre).strip().lower().replace(' ', '_')
+
+
+def _errores_validacion_password(password, usuario):
+    try:
+        validate_password(password, user=usuario)
+    except ValidationError as error:
+        return error.messages
+    return []
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def api_root(request):
+    return Response({
+        'autentificar': api_reverse('autentificar', request=request),
+        'agregarusuario': api_reverse('agregarusuario', request=request),
+        'actualizar': api_reverse('actualizar', request=request),
+        'addpermiso': api_reverse('addpermiso', request=request),
+        'asociapermiso': api_reverse('asociapermiso', request=request),
+        'token': api_reverse('token_obtain_pair', request=request),
+    })
 
 
 @api_view(['POST'])
@@ -33,11 +65,8 @@ def autentificar(request):
     })
 
     servicios = {
-        'dashboard': any(item in permisos for item in ('view_dashboard', 'manage_dashboard')),
-        'usuarios': any(item in permisos for item in ('view_users', 'manage_users')),
-        'pagos': any(item in permisos for item in ('view_payments', 'manage_payments')),
-        'reportes': any(item in permisos for item in ('view_reports', 'manage_reports')),
-        'configuracion': any(item in permisos for item in ('manage_settings', 'view_settings')),
+        servicio: bool(SERVICIO_PERMISOS[servicio].intersection(permisos))
+        for servicio in SERVICIO_PERMISOS
     }
 
     token = RefreshToken.for_user(user)
@@ -63,6 +92,17 @@ def agregarusuario(request):
 
     if not username or not password:
         return Response({'ok': False, 'detail': 'Debe ingresar usuario y contraseña.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    errores_password = _errores_validacion_password(
+        password,
+        User(username=username, email=email),
+    )
+    if errores_password:
+        return Response({
+            'ok': False,
+            'detail': 'La contraseña no cumple los requisitos.',
+            'errors': errores_password,
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     if User.objects.filter(username=username).exists():
         return Response({'ok': False, 'detail': 'El usuario ya existe.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -91,6 +131,14 @@ def actualizar(request):
         usuario = User.objects.get(username=username)
     except User.DoesNotExist:
         return Response({'ok': False, 'detail': 'Usuario no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+    errores_password = _errores_validacion_password(nueva_password, usuario)
+    if errores_password:
+        return Response({
+            'ok': False,
+            'detail': 'La contraseña no cumple los requisitos.',
+            'errors': errores_password,
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     usuario.set_password(nueva_password)
     usuario.save()

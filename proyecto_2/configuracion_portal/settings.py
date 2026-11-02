@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,11 +11,13 @@ CSRF_TRUSTED_ORIGINS = [
     'https://localhost:8000',
     'http://127.0.0.1:8000',
     'https://127.0.0.1:8000',
-    'http://localhost:8001',
-    'https://localhost:8001',
-    'http://127.0.0.1:8001',
-    'https://127.0.0.1:8001',
 ]
+codespace_name = os.getenv('CODESPACE_NAME')
+forwarding_domain = os.getenv('GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN')
+if codespace_name and forwarding_domain:
+    CSRF_TRUSTED_ORIGINS.append(
+        f'https://{codespace_name}-8000.{forwarding_domain}'
+    )
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
@@ -63,3 +66,5 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+
+API_URL = os.getenv('API_URL', 'http://localhost:8050/api')
